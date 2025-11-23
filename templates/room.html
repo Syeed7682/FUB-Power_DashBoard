@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ room_id }} - BEMS EWU</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    <meta http-equiv="refresh" content="30">
+    <style>
+        /* === BEAUTIFUL ROUNDED BADGES - EXACTLY LIKE YOUR DESIGN === */
+        .status-badge {
+            display: inline-block;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-weight: 700;
+            text-align: center;
+            min-width: 190px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin: 12px;
+            transition: all 0.3s ease;
+            color: white !important;
+        }
+        .status-badge:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+
+        .badge-voltage { background: #3498db; }
+        .badge-current { background: #f39c12; }
+        .badge-power   { background: #e74c3c; }
+        .badge-energy  { background: #27ae60; }
+        .badge-bill    { background: #00cec9; }
+        .badge-co2     { background: #2d3436; }
+        .badge-saving  { background: #27ae60; }
+
+        .big-number { font-size: 2.8rem; font-weight: 800; line-height: 1; }
+        .medium-number { font-size: 2.2rem; font-weight: 800; }
+
+        /* Buttons */
+        .btn-control {
+            padding: 20px 50px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            border-radius: 50px;
+            border: none;
+            width: 100%;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+        .btn-on  { background: linear-gradient(135deg, #00b894, #00a085); }
+        .btn-off { background: linear-gradient(135deg, #e17055, #ea5d3f); }
+        .btn-on:hover  { background: #00a085; transform: translateY(-5px); }
+        .btn-off:hover { background: #ea5d3f; transform: translateY(-5px); }
+
+        .date-input {
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+            font-size: 1rem;
+        }
+        .btn-update {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .schedule-box {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        /* Navbar */
+        .navbar {
+            background: linear-gradient(135deg, #00b894, #00a085) !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark shadow">
+    <div class="container-fluid">
+        <a href="/" class="btn btn-outline-light">Back to Building</a>
+        <h4 class="text-white mb-0">{{ room_id }} - AC Monitor & Control</h4>
+        <div></div>
+    </div>
+</nav>
+
+<div class="container mt-4 pb-5">
+
+    <!-- LIVE STATUS BADGES -->
+    <div class="text-center mb-4">
+        <div class="d-inline-flex flex-wrap justify-content-center gap-4">
+            <div class="status-badge badge-voltage">
+                <small>Voltage</small><br>
+                <div class="big-number">{{ current_v }} V</div>
+            </div>
+            <div class="status-badge badge-current">
+                <small>Current</small><br>
+                <div class="big-number">{{ current_i }} A</div>
+            </div>
+            <div class="status-badge badge-power">
+                <small>Power</small><br>
+                <div class="big-number">{{ current_p }} W</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mb-5">
+        <div class="d-inline-flex flex-wrap justify-content-center gap-4">
+            <div class="status-badge badge-energy">
+                <small>Energy</small><br>
+                <div class="medium-number">{{ total_kwh }} kWh</div>
+            </div>
+            <div class="status-badge badge-bill">
+                <small>Bill</small><br>
+                <div class="medium-number">৳{{ total_bill }}</div>
+            </div>
+            <div class="status-badge badge-co2">
+                <small>CO₂</small><br>
+                <div class="medium-number">{{ total_carbon }} g</div>
+            </div>
+            <div class="status-badge badge-saving">
+                <small>20% Saving</small><br>
+                <div style="font-size:1.8rem; font-weight:700;">
+                    {{ savings_kwh }} kWh<br>৳{{ savings_tk }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DATETIME PICKER (Date + Time) -->
+    <div class="text-center mb-5">
+        <form class="d-inline-block">
+            <input type="datetime-local" name="start" value="{{ start }}" class="date-input" step="60" required>
+            <input type="datetime-local" name="end" value="{{ end }}" class="date-input ms-3" step="60" required>
+            <button type="submit" class="btn btn-update ms-3">Update</button>
+        </form>
+        <br><br>
+        <small class="text-muted">
+            Available data: <strong>2025-11-23 00:00</strong> → <strong>2025-11-23 23:59</strong>
+        </small>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="row g-4 mb-5">
+        <div class="col-12">{{ voltage_html | safe }}</div>
+        <div class="col-12">{{ current_html | safe }}</div>
+        <div class="col-12">{{ power_html | safe }}</div>
+    </div>
+
+    <!-- CONTROL PANEL -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <form method="POST">
+                <button name="toggle" class="btn-control {% if status == 'On' %}btn-off{% else %}btn-on{% endif %}">
+                    TURN {{ 'OFF' if status == 'On' else 'ON' }} AC
+                </button>
+            </form>
+        </div>
+        <div class="col-lg-6">
+            <div class="schedule-box">
+                <h5 class="mb-4 text-success fw-bold">Auto Schedule (Off when no class)</h5>
+                <form method="POST" class="row g-3 align-items-end">
+                    <div class="col">
+                        <label class="form-label fw-bold">Turn ON</label>
+                        <input type="time" name="on_time" value="{{ sched_on }}" class="form-control form-control-lg">
+                    </div>
+                    <div class="col">
+                        <label class="form-label fw-bold">Turn OFF</label>
+                        <input type="time" name="off_time" value="{{ sched_off }}" class="form-control form-control-lg">
+                    </div>
+                    <div class="col-auto">
+                        <button name="schedule" class="btn btn-primary btn-lg w-100">SET</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

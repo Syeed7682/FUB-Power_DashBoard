@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ floor_name }} - EWU BEMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+    <meta http-equiv="refresh" content="20">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+            font-family: 'Poppins', sans-serif; 
+        }
+        .navbar { 
+            background: linear-gradient(135deg, #00b894, #00a085) !important; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2); 
+        }
+
+        /* Floor Summary Badges */
+        .floor-badge {
+            padding: 18px 35px;
+            border-radius: 50px;
+            font-weight: 700;
+            text-align: center;
+            min-width: 210px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+            margin: 15px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .floor-badge:hover { transform: translateY(-10px); box-shadow: 0 25px 50px rgba(0,0,0,0.35); }
+
+        .badge-energy-floor  { background: #27ae60; }
+        .badge-bill-floor    { background: #00cec9; }
+        .badge-carbon-floor  { background: #e67e22; }
+        .big-text { font-size: 2.5rem; font-weight: 800; }
+
+        /* Room Cards - Beautiful Gradient */
+        .room-card-floor {
+            border-radius: 28px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+        }
+        .room-card-floor:hover {
+            transform: translateY(-18px) scale(1.06);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+        }
+
+        .bg-on-floor  { background: linear-gradient(135deg, #55efc4, #00b894); }
+        .bg-off-floor { background: linear-gradient(135deg, #fd79a8, #e17055); }
+
+        .room-card-body {
+            padding: 28px 20px;
+            text-align: center;
+            color: white;
+        }
+        .room-title { font-size: 1.9rem; font-weight: 800; margin-bottom: 8px; }
+        .status-text { font-size: 1.5rem; font-weight: 700; margin: 12px 0; }
+        .power-text { font-size: 1.15rem; opacity: 0.95; }
+
+        /* Chart Card with Matching Colors */
+        .chart-card {
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            background: white;
+            padding: 20px;
+            margin: 30px 0;
+        }
+
+        /* Custom Plotly Colors - Match Your Buttons! */
+        .js-plotly-plot .plotly .main-svg .cartesianlayer .subplot .gridlayer .xgrid,
+        .js-plotly-plot .plotly .main-svg .cartesianlayer .subplot .gridlayer .ygrid {
+            stroke: #ddd !important;
+        }
+        .js-plotly-plot .plotly .main-svg .cartesianlayer .subplot .xaxislayer-above text,
+        .js-plotly-plot .plotly .main-svg .cartesianlayer .subplot .yaxislayer-above text {
+            fill: #2d3436 !important;
+            font-weight: 600 !important;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark shadow">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <a href="/" class="btn btn-outline-light">Back to Building</a>
+        <h3 class="text-white mb-0">{{ floor_name }} - Floor Summary</h3>
+        <a href="/admin" class="btn btn-outline-light">Admin Panel</a>
+    </div>
+</nav>
+
+<div class="container mt-5 pb-5">
+
+    <!-- Floor Summary Badges -->
+    <div class="text-center mb-5">
+        <div class="d-inline-flex flex-wrap justify-content-center gap-4">
+            <div class="floor-badge badge-energy-floor">
+                <div>Total Energy</div>
+                <div class="big-text">{{ total_energy }} kWh</div>
+            </div>
+            <div class="floor-badge badge-bill-floor">
+                <div>Estimated Bill</div>
+                <div class="big-text">৳{{ total_bill }}</div>
+            </div>
+            <div class="floor-badge badge-carbon-floor">
+                <div>Carbon Emissions</div>
+                <div class="big-text">{{ total_carbon }} gCO₂</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Power Chart - NOW WITH YOUR BUTTON COLORS -->
+    <div class="chart-card">
+        <h4 class="text-success text-center mb-4 fw-bold" style="font-size: 1.8rem;">
+            Average Power Per Room (W)
+        </h4>
+        {{ power_chart | safe }}
+    </div>
+
+    <!-- Room Grid -->
+    <h3 class="text-success text-center mb-5 fw-bold" style="font-size: 2rem;">
+        Rooms On {{ floor_name }}
+    </h3>
+    <div class="row justify-content-center g-4">
+        {% for room in rooms %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="/room/{{ room.id }}" class="text-decoration-none">
+                    <div class="room-card-floor {% if room.status == 'On' %}bg-on-floor{% else %}bg-off-floor{% endif %}">
+                        <div class="room-card-body">
+                            <div class="room-title">{{ room.id }}</div>
+                            <div class="status-text">AC {{ room.status }}</div>
+                            <div class="power-text">
+                                {{ room.current }} A • {{ room.power }} W
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<!-- CUSTOM PLOTLY COLORS - MATCHING YOUR DESIGN -->
+<script id="rooms-data" type="application/json">{{ rooms | tojson }}</script>
+<script>
+// Make the bar chart use your exact button colors!
+document.addEventListener("DOMContentLoaded", function() {
+    setTimeout(function() {
+        try {
+            // Read the JSON from a non-JS script tag to avoid template-brace parsing issues
+            const roomsData = JSON.parse(document.getElementById('rooms-data').textContent);
+            const bars = document.querySelectorAll('.js-plotly-plot .plotly .barlayer .trace.bars g.point path');
+            bars.forEach(function(bar) {
+                // Try multiple ways to extract the plotted x value (depends on Plotly/D3 internals)
+                var roomId;
+                if (bar.parentElement && bar.parentElement.__data__ && Array.isArray(bar.parentElement.__data__) && bar.parentElement.__data__[0]) {
+                    roomId = bar.parentElement.__data__[0].x;
+                } else if (bar.__data__ && bar.__data__.x) {
+                    roomId = bar.__data__.x;
+                }
+                var found = roomsData.find(function(r) { return r.id === roomId; });
+                var isOn = found ? found.status === 'On' : false;
+                bar.style.fill = isOn ? '#00b894' : '#e17055';
+                bar.style.opacity = '0.95';
+            });
+        } catch (e) {
+            console.error('Error coloring bars:', e);
+        }
+    }, 800);
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
